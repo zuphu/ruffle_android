@@ -12,43 +12,66 @@
         android:text="Ruffle"
         android:id="@+id/button"
         android:onClick="sendPost"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/phonenumber" />
+        android:layout_alignParentBottom="true"
+        android:layout_alignStart="@+id/button3" />
 
-    <EditText
+    <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="Select Picture"
+        android:id="@+id/button2"
+        android:onClick="takePicture"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/button3" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Take Picture"
+        android:id="@+id/button3"
+        android:onClick="takePicture"
+        android:layout_toStartOf="@+id/button4" />
+
+    <ImageView
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/imageviewPicture"
+        android:background="#fffaff69"
+        android:cropToPadding="true"
+        android:layout_alignParentEnd="false"
+        android:layout_above="@+id/button"
+        android:layout_below="@+id/phonenumber" />
+
+    <Spinner
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinnerCountryCode"
+        android:layout_weight="1"
+        android:layout_below="@+id/button2"
+        android:layout_alignEnd="@+id/phonenumber"
+        android:layout_alignParentEnd="false" />
+
+    <EditText
+        android:layout_width="270dp"
+        android:layout_height="38dp"
         android:inputType="phone"
         android:ems="10"
         android:id="@+id/phonenumber"
         android:background="#ffff3ed0"
-        android:layout_below="@+id/button2"
-        android:layout_alignParentStart="true" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Picture"
-        android:id="@+id/button2"
-        android:onClick="takePicture"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Gallery"
-        android:id="@+id/button3"
-        android:onClick="selectPicture"
-        android:layout_above="@+id/phonenumber"
-        android:layout_toEndOf="@+id/button2" />
-
-    <Spinner
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/spinnerCountrycode"
-        android:layout_below="@+id/button"
         android:layout_alignParentStart="true"
-        android:spinnerMode="dialog" />
+        android:layout_below="@+id/spinnerCountryCode" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Contact"
+        android:id="@+id/button4"
+        android:onClick="selectContact"
+        android:layout_gravity="center_vertical"
+        android:layout_weight="1"
+        android:layout_alignBottom="@+id/button2"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentStart="false" />
 
 </RelativeLayout>

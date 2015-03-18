@@ -3,7 +3,10 @@ package feathers.your.ruffle.ruffle;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -13,8 +16,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
+
+import com.google.gson.annotations.SerializedName;
 
 import java.io.File;;
 
@@ -25,12 +31,14 @@ import retrofit.client.Response;
 import retrofit.http.Multipart;
 import retrofit.http.POST;
 import retrofit.http.Part;
+import retrofit.mime.TypedByteArray;
 import retrofit.mime.TypedFile;
-
 import static android.R.layout.simple_spinner_dropdown_item;
 
 public class MainActivity extends ActionBarActivity {
     String picturePath;
+    public final static String EXTRA_MESSAGE = "feathers.your.ruffle.MESSAGE";
+    public final static String ERROR_MESSAGE = "feathers.your.ruffle.ERRORMSG";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +49,8 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        Spinner spinner = (Spinner) findViewById(R.id.spinnerCountrycode);
+        //Populate spinner from resource file
+        Spinner spinner = (Spinner) findViewById(R.id.spinnerCountryCode);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.countrycode, android.R.layout.simple_spinner_item);
 
@@ -81,7 +90,39 @@ public class MainActivity extends ActionBarActivity {
                 //MEDIA GALLERY
                 selectedImagePath = ImageFilePath.getPath(getApplicationContext(), selectedImageUri);
                 imgPath = selectedImagePath;
+                ImageView iv = (ImageView)findViewById(R.id.imageviewPicture);
+                File f = new File(imgPath);
+                Bitmap b = BitmapFactory.decodeFile(f.getAbsolutePath());
+                //b.setWidth(200);b.setHeight(200);
+                iv.setImageBitmap(b);
                 Log.v("imgPath: ", imgPath);
+            }
+            else if (requestCode == PICK_CONTACT) {
+                Uri contactData = data.getData();
+                Cursor c = getContentResolver().query(contactData, null, null, null, null);
+                if (c.moveToFirst()) {
+
+
+                    String id =c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
+
+                    String hasPhone =c.getString(c.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER));
+
+                    if (hasPhone.equalsIgnoreCase("1")) {
+                        Cursor phones = getContentResolver().query(
+                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,
+                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID +" = "+ id,
+                                null, null);
+                        phones.moveToFirst();
+                        String cNumber = phones.getString(phones.getColumnIndex("data1"));
+
+                        Log.v("PHONENUMBER: ", cNumber);
+                        EditText et = (EditText)findViewById(R.id.phonenumber);
+                        et.setText(cNumber);
+                    }
+                    String name = c.getString(c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                    Log.v("NAME: ", name);
+
+                }
             }
         }
     }
@@ -90,7 +131,7 @@ public class MainActivity extends ActionBarActivity {
         //phonenumber from text field
         EditText et = (EditText)findViewById(R.id.phonenumber);
         //from country
-        Spinner s = (Spinner)findViewById(R.id.spinnerCountrycode);
+        Spinner s = (Spinner)findViewById(R.id.spinnerCountryCode);
 
         //phonenumber
         String pn = et.getText().toString();
@@ -103,31 +144,52 @@ public class MainActivity extends ActionBarActivity {
             Toast.makeText(this, "Please enter a phone number.", Toast.LENGTH_SHORT).show(); return; }
 
         RetrofitInterface retrofitInterface = new RestAdapter.Builder()
-                .setEndpoint("http://192.168.0.77:3000").build().create(RetrofitInterface.class);
+                .setEndpoint("http://10.255.243.48:3000").build().create(RetrofitInterface.class);
 
         TypedFile img = new TypedFile("image/jpg", new File(imgPath));
 
         Toast.makeText(this, "Please select a picture", Toast.LENGTH_LONG);
 
-        retrofitInterface.registerUser(img, pn, cc, new Callback<String>() {
+        Log.v("pn: ", pn);
+        Log.v("cc: ", cc);
+        Log.v("imgPath: ", imgPath);
+
+        retrofitInterface.registerUser(img, pn, cc, new Callback<Response>() {
             @Override
-            public void success(String s, Response r)
+            public void success(Response result, Response response)
             {
                 Log.v("Success", "Success");
+                Intent intent = new Intent(getApplicationContext(), DisplayRuffleResult.class);
+                String message = "Success!!!";
+                intent.putExtra(EXTRA_MESSAGE, message);
+                intent.putExtra(ERROR_MESSAGE, "");
+                startActivity(intent);
             }
             @Override
             public void failure(RetrofitError re)
             {
-                Log.v("Fail", "Fail");
+                String json =  new String(((TypedByteArray) re.getResponse().getBody()).getBytes());
+                Log.v("failure", json.toString());
+
+                Intent intent = new Intent(getApplicationContext(), DisplayRuffleResult.class);
+                String message = "FAIL!!!";
+                intent.putExtra(EXTRA_MESSAGE, message);
+                intent.putExtra(ERROR_MESSAGE, json);
+                startActivity(intent);
             }
         });
     }
 
+    static final int PICK_CONTACT = 200;
+    public void selectContact (View v) {
+        Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+        startActivityForResult(intent, PICK_CONTACT);
+    }
     public interface RetrofitInterface {
         // synchronously
         @Multipart
         @POST("/upload")
-        void registerUser( @Part("photo") TypedFile image, @Part("phonenumber") String phone, @Part("cell_countrycode") String countrycode, Callback<String> cb);
+        void registerUser( @Part("photo") TypedFile image, @Part("phonenumber") String phone, @Part("cell_countrycode") String countrycode, Callback<Response> cb);
     }
 
     @Override
@@ -137,7 +199,6 @@ public class MainActivity extends ActionBarActivity {
 
         return true;
     }
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -152,37 +213,5 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    public String getRealPathFromURI(Context context, Uri contentUri) {
-        Cursor cursor = null;
-        try {
-            String[] proj = { MediaStore.Images.Media.DATA };
-            cursor = context.getContentResolver().query(contentUri,  proj, null, null, null);
-            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-            cursor.moveToFirst();
-            return cursor.getString(column_index);
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-    }
-
-    public String getImagePath(Uri uri){
-        Cursor cursor = getContentResolver().query(uri, null, null, null, null);
-        cursor.moveToFirst();
-        String document_id = cursor.getString(0);
-        document_id = document_id.substring(document_id.lastIndexOf(":")+1);
-        cursor.close();
-
-        cursor = getContentResolver().query(
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
-        cursor.moveToFirst();
-        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-        cursor.close();
-
-        return path;
     }
 }
