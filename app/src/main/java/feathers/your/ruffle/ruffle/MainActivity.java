@@ -1,10 +1,14 @@
 package feathers.your.ruffle.ruffle;
 
+import android.app.AlertDialog;
+import android.app.FragmentManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
@@ -44,6 +48,10 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if(!isNetworkAvailable(this)) {
+            Toast.makeText(getApplicationContext(), "Internet connection required.", Toast.LENGTH_LONG).show();
+            finish();
+        }
     }
 
     @Override
@@ -144,7 +152,7 @@ public class MainActivity extends ActionBarActivity {
             Toast.makeText(this, "Please enter a phone number.", Toast.LENGTH_SHORT).show(); return; }
 
         RetrofitInterface retrofitInterface = new RestAdapter.Builder()
-                .setEndpoint("http://10.255.243.48:3000").build().create(RetrofitInterface.class);
+                .setEndpoint("http://192.168.1.63:3000").build().create(RetrofitInterface.class);
 
         TypedFile img = new TypedFile("image/jpg", new File(imgPath));
 
@@ -213,5 +221,13 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager conMan = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if(conMan.getActiveNetworkInfo() != null && conMan.getActiveNetworkInfo().isConnected())
+            return true;
+        else
+            return false;
     }
 }
